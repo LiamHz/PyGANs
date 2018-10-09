@@ -1,0 +1,4 @@
+[MASTER]
+
+optimize-ast=no
+disable=C
