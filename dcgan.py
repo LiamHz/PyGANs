@@ -26,42 +26,61 @@ manualSeed = 999
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
-debugging = True
-
 # Determines if model will animate progress
 # If false, progress pics will each be put on a seperate plot
-animate_progress = False
-
-# Determines if model will train, if false, model will be set for evaluation
-train_model = True
-
-# Detemines what type of GAN model will be trained
-gan_type = 'dog'
-
-# Location of data on disk, disk location of models
-# and root directory for dataset
-if gan_type == 'celeb':
-    PATH_TO_DATA = './models/celeb_dcgan/celeb_data.pkl'
-    PATH_TO_LOAD_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
-    PATH_TO_LOAD_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
-    PATH_TO_SAVE_MODEL_D = './models/celeb_dcgan/backups/celeb_D_Model'
-    PATH_TO_SAVE_MODEL_G = './models/celeb_dcgan/backups/celeb_G_Model'
-    PATH_TO_IMAGE_LOGS = './celeb_gans_images'
-    dataroot = r"C:\Users\liamh\Documents\datasets\celeba"
-elif gan_type == 'dog':
-    PATH_TO_DATA = './models/dog_dcgan/dog_data.pkl'
-    PATH_TO_LOAD_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
-    PATH_TO_LOAD_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
-    PATH_TO_SAVE_MODEL_D = './models/dog_dcgan/backups/dog_D_Model'
-    PATH_TO_SAVE_MODEL_G = './models/dog_dcgan/backups/dog_G_Model'
-    PATH_TO_IMAGE_LOGS = './dog_gans_images'
-    dataroot = r"C:\Users\liamh\Documents\datasets\cats-and-dogs\dogs"
+animate_progress = True
 
 # Determines if models are loaded from disk
 load_models_from_disk = True
 
 # Determines if data (img_list, G_losses, D_losses, and iters) are loaded from disk
 load_data_from_disk = True
+
+# Determines if model will train, if false, model will be set for evaluation
+train_model = True
+
+# Detemines what type of GAN model will be trained
+gan_type = 'pokemon'
+
+# Number of training epochs
+# Specifies how many additional epochs to run
+num_epochs = 45
+
+# Location of data on disk, disk location of models
+# and root directory for dataset
+if gan_type == 'celeb':
+    PATH_TO_DATA = './models/celeb_dcgan/celeb_data.pkl'
+    PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
+    PATH_TO_LOAD_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
+    PATH_TO_LOAD_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/celeb_dcgan/backups/celeb_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/celeb_dcgan/backups/celeb_G_Model'
+    PATH_TO_IMAGE_LOGS = './celeb_gans_images'
+    dataroot = r"C:\Users\liamh\Documents\datasets\celeba"
+elif gan_type == 'dog':
+    PATH_TO_DATA = './models/dog_dcgan/dog_data.pkl'
+    PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
+    PATH_TO_LOAD_MODEL_D = './models/dog_dcgan/dog_D_Model'
+    PATH_TO_LOAD_MODEL_G = './models/dog_dcgan/dog_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/dog_dcgan/dog_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/dog_dcgan/dog_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/dog_dcgan/backups/dog_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/dog_dcgan/backups/dog_G_Model'
+    PATH_TO_IMAGE_LOGS = './dog_gans_images'
+    dataroot = r"C:\Users\liamh\Documents\datasets\cats-and-dogs\dogs"
+elif gan_type == 'pokemon':
+    PATH_TO_DATA = './models/pokemon_dcgan/pokemon_data.pkl'
+    PATH_TO_DATA_BACKUP = './models/pokemon_dcgan/pokemon_data'
+    PATH_TO_LOAD_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
+    PATH_TO_LOAD_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/pokemon_dcgan/backups/pokemon_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/pokemon_dcgan/backups/pokemon_G_Model'
+    PATH_TO_IMAGE_LOGS = './pokemon_gans_images'
+    dataroot = r"C:\Users\liamh\Documents\datasets\pokemon"
 
 # Number of workers for dataloader (Image loading)
 workers = 4
@@ -84,9 +103,6 @@ ngf = 64
 
 # Size of feature maps in generator
 ndf = 64
-
-# Number of training epochs
-num_epochs = 1
 
 # Learning rate for optimizers
 lr = 0.0002
@@ -164,6 +180,8 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
 
         def forward(self, input):
             return self.main(input)
+
+    print("\nGAN for", gan_type)
 
     # Create the generator
     netG = Generator(ngpu).to(device)
@@ -246,7 +264,6 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
     optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
-    print("GAN for", gan_type)
 
     # Training Loop
 
@@ -259,6 +276,9 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         D_losses = data['D_losses']
         iters = data['iters']
         epoch = data['epoch']
+        if load_models_from_disk:
+            # num_epochs specifies how many additional epochs to run
+            num_epochs += epoch
         print('\nData loaded from disk')
     else:
         img_list = []
@@ -271,7 +291,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         print("Starting Training Loop...")
         training_start_time = time.time()
         # For each epoch
-        while epoch <= epoch:
+        while epoch <= num_epochs:
             epoch_start_time = time.time()
             # For each batch in the dataloader
             for i, data in enumerate(dataloader, 0):
@@ -349,12 +369,12 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             epoch_end_time = time.time()
             print("Epoch", epoch, "Time Elapsed:", str(math.floor(epoch_end_time - epoch_start_time)) + "s\n")
 
-            epoch += 1
-
-            # Save model to disk
-            torch.save(netD.state_dict(), PATH_TO_SAVE_MODEL_D + '_epoch_' + str(epoch) + '.pt')
-            torch.save(netG.state_dict(), PATH_TO_SAVE_MODEL_G + '_epoch_' + str(epoch) + '.pt')
+            # Save backup model to disk
+            torch.save(netD.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_D + '_epoch_' + str(epoch) + '.pt')
+            torch.save(netG.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_G + '_epoch_' + str(epoch) + '.pt')
             print("Models for D and G saved to disk")
+
+            epoch += 1
 
             # Save data to disk
             data = {}
@@ -367,6 +387,23 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             pickle.dump(data, pickle_jar)
             pickle_jar.close()
             print('Data saved to disk')
+
+        # Save model once per training session to disk
+        torch.save(netD.state_dict(), PATH_TO_SAVE_MODEL_D + '.pt')
+        torch.save(netG.state_dict(), PATH_TO_SAVE_MODEL_G + '.pt')
+        print("Models for D and G saved to disk")
+
+        # Save data backup once per training session to disk
+        data = {}
+        data['img_list'] = img_list
+        data['G_losses'] = G_losses
+        data['D_losses'] = D_losses
+        data['iters'] = iters
+        data['epoch'] = epoch
+        pickle_jar = open(PATH_TO_DATA_BACKUP + '.pkl', 'wb')
+        pickle.dump(data, pickle_jar)
+        pickle_jar.close()
+        print('Data saved to disk')
 
         training_end_time = time.time()
         print("Training Time Elapsed:", str(math.floor(training_end_time - training_start_time)) + "s\n")
@@ -383,7 +420,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
     plt.xlabel("iterations")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig(PATH_TO_IMAGE_LOGS + '/G_and_D_loss_during_training.png')
+    plt.savefig(PATH_TO_IMAGE_LOGS + '/G_and_D_loss_during_training.png', bbox_inches="tight")
 
     # Visualize training progress of G
     if animate_progress:
@@ -399,7 +436,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             plt.figure(figsize=(8,8))
             plt.axis("off")
             plt.imshow(np.transpose(img,(1,2,0)))
-            plt.savefig(PATH_TO_IMAGE_LOGS + '/progress_pics/progress_'+str(index)+'.png')
+            plt.savefig(PATH_TO_IMAGE_LOGS + '/progress_pics/progress_'+str(index)+'.png', bbox_inches="tight")
             plt.close()     # Prevents flood of progress pics filling display
 
 
@@ -419,5 +456,5 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
     plt.axis("off")
     plt.title("Fake Images")
     plt.imshow(np.transpose(img_list[-1], (1,2,0)))
-    plt.savefig(PATH_TO_IMAGE_LOGS + '/real_vs_fake.png')
+    plt.savefig(PATH_TO_IMAGE_LOGS + '/real_vs_fake.png', bbox_inches="tight")
     plt.show()
