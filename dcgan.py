@@ -28,7 +28,7 @@ torch.manual_seed(manualSeed)
 
 # Determines if model will animate progress
 # If false, progress pics will each be put on a seperate plot
-animate_progress = True
+animate_progress = False
 
 # Determines if models are loaded from disk
 load_models_from_disk = True
@@ -37,14 +37,14 @@ load_models_from_disk = True
 load_data_from_disk = True
 
 # Determines if model will train, if false, model will be set for evaluation
-train_model = True
+train_model = False
 
 # Detemines what type of GAN model will be trained
 gan_type = 'pokemon'
 
 # Number of training epochs
 # Specifies how many additional epochs to run
-num_epochs = 45
+num_epochs = 50
 
 # Location of data on disk, disk location of models
 # and root directory for dataset
@@ -53,10 +53,10 @@ if gan_type == 'celeb':
     PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
     PATH_TO_LOAD_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
-    PATH_TO_SAVE_MODEL_D = './models/celeb_dcgan/backups/celeb_D_Model'
-    PATH_TO_SAVE_MODEL_G = './models/celeb_dcgan/backups/celeb_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/celeb_dcgan/backups/celeb_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/celeb_dcgan/backups/celeb_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
     PATH_TO_IMAGE_LOGS = './celeb_gans_images'
     dataroot = r"C:\Users\liamh\Documents\datasets\celeba"
 elif gan_type == 'dog':
@@ -64,10 +64,10 @@ elif gan_type == 'dog':
     PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
     PATH_TO_LOAD_MODEL_D = './models/dog_dcgan/dog_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/dog_dcgan/dog_G_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_D = './models/dog_dcgan/dog_D_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_G = './models/dog_dcgan/dog_G_Model'
-    PATH_TO_SAVE_MODEL_D = './models/dog_dcgan/backups/dog_D_Model'
-    PATH_TO_SAVE_MODEL_G = './models/dog_dcgan/backups/dog_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/dog_dcgan/backups/dog_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/dog_dcgan/backups/dog_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/dog_dcgan/dog_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/dog_dcgan/dog_G_Model'
     PATH_TO_IMAGE_LOGS = './dog_gans_images'
     dataroot = r"C:\Users\liamh\Documents\datasets\cats-and-dogs\dogs"
 elif gan_type == 'pokemon':
@@ -75,10 +75,10 @@ elif gan_type == 'pokemon':
     PATH_TO_DATA_BACKUP = './models/pokemon_dcgan/pokemon_data'
     PATH_TO_LOAD_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
-    PATH_TO_SAVE_BACKUP_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
-    PATH_TO_SAVE_MODEL_D = './models/pokemon_dcgan/backups/pokemon_D_Model'
-    PATH_TO_SAVE_MODEL_G = './models/pokemon_dcgan/backups/pokemon_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/pokemon_dcgan/backups/pokemon_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/pokemon_dcgan/backups/pokemon_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
     PATH_TO_IMAGE_LOGS = './pokemon_gans_images'
     dataroot = r"C:\Users\liamh\Documents\datasets\pokemon"
 
@@ -369,31 +369,33 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             epoch_end_time = time.time()
             print("Epoch", epoch, "Time Elapsed:", str(math.floor(epoch_end_time - epoch_start_time)) + "s\n")
 
-            # Save backup model to disk
-            torch.save(netD.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_D + '_epoch_' + str(epoch) + '.pt')
-            torch.save(netG.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_G + '_epoch_' + str(epoch) + '.pt')
-            print("Models for D and G saved to disk")
+            # Save backups once every 10 epochs
+            if epoch % 10 == 0:
+                # Backup model to disk
+                torch.save(netD.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_D + '_epoch_' + str(epoch) + '.pt')
+                torch.save(netG.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_G + '_epoch_' + str(epoch) + '.pt')
+                print("Models for D and G saved to disk")
+
+                # Backup data to disk
+                data = {}
+                data['img_list'] = img_list
+                data['G_losses'] = G_losses
+                data['D_losses'] = D_losses
+                data['iters'] = iters
+                data['epoch'] = epoch + 1
+                pickle_jar = open(PATH_TO_DATA, 'wb')
+                pickle.dump(data, pickle_jar)
+                pickle_jar.close()
+                print('Data saved to disk')
 
             epoch += 1
 
-            # Save data to disk
-            data = {}
-            data['img_list'] = img_list
-            data['G_losses'] = G_losses
-            data['D_losses'] = D_losses
-            data['iters'] = iters
-            data['epoch'] = epoch
-            pickle_jar = open(PATH_TO_DATA, 'wb')
-            pickle.dump(data, pickle_jar)
-            pickle_jar.close()
-            print('Data saved to disk')
-
-        # Save model once per training session to disk
+        # Save model at the end of a training session to disk
         torch.save(netD.state_dict(), PATH_TO_SAVE_MODEL_D + '.pt')
         torch.save(netG.state_dict(), PATH_TO_SAVE_MODEL_G + '.pt')
         print("Models for D and G saved to disk")
 
-        # Save data backup once per training session to disk
+        # Save data at the end of a training session to disk
         data = {}
         data['img_list'] = img_list
         data['G_losses'] = G_losses
@@ -406,7 +408,9 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         print('Data saved to disk')
 
         training_end_time = time.time()
-        print("Training Time Elapsed:", str(math.floor(training_end_time - training_start_time)) + "s\n")
+        print("Training Session Time Elapsed:", str(math.floor(training_end_time - training_start_time)) + "s\n")
+        approx_total_training_time = epoch_end_time - epoch_start_time
+        print("Total Model Training Time:", str(math.floor((epoch_end_time - epoch_start_time) * epoch / 60) + "m\n"))
     else:
         # Prep G and D for evalutation
         netD.eval()
