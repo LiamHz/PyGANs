@@ -44,7 +44,7 @@ gan_type = 'pokemon'
 
 # Number of training epochs
 # Specifies how many additional epochs to run
-num_epochs = 50
+num_epochs = 5
 
 # Location of data on disk, disk location of models
 # and root directory for dataset
@@ -326,6 +326,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
                 # Calculate the gradients for this batch
                 errD_fake.backward()
                 D_G_z1 = output.mean().item()
+                
                 # Add the gradients from the all-real and all-fake batches
                 errD = errD_real + errD_fake
                 # Update D
@@ -408,9 +409,9 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         print('Data saved to disk')
 
         training_end_time = time.time()
-        print("Training Session Time Elapsed:", str(math.floor(training_end_time - training_start_time)) + "s\n")
+        print("Training Session Time Elapsed:", str(math.floor((training_end_time - training_start_time) / 60)) + "m\n")
         approx_total_training_time = epoch_end_time - epoch_start_time
-        print("Total Model Training Time:", str(math.floor((epoch_end_time - epoch_start_time) * epoch / 60) + "m\n"))
+        print("Total Model Training Time:", str(math.floor((epoch_end_time - epoch_start_time) * epoch / 60)) + "m\n")
     else:
         # Prep G and D for evalutation
         netD.eval()
