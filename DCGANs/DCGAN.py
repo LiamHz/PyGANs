@@ -15,9 +15,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
+
 import time
 import pickle
 import math
+from DCGAN_models import Generator
+from DCGAN_models import Discriminator
 
 # Set random seed for reproducibility
 manualSeed = 999
@@ -37,20 +40,20 @@ load_models_from_disk = True
 load_data_from_disk = True
 
 # Determines if model will train, if false, model will be set for evaluation
-train_model = False
+train_model = True
 
 # Detemines what type of GAN model will be trained
-gan_type = 'pokemon'
+gan_type = 'cat'
 
 # Number of training epochs
 # Specifies how many additional epochs to run
-num_epochs = 5
+num_epochs = 40
 
 # Location of data on disk, disk location of models
 # and root directory for dataset
 if gan_type == 'celeb':
     PATH_TO_DATA = './models/celeb_dcgan/celeb_data.pkl'
-    PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
+    PATH_TO_DATA_BACKUP = './models/dog_dcgan/backups/dog_data'
     PATH_TO_LOAD_MODEL_D = './models/celeb_dcgan/celeb_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/celeb_dcgan/celeb_G_Model'
     PATH_TO_SAVE_BACKUP_MODEL_D = './models/celeb_dcgan/backups/celeb_D_Model'
@@ -61,7 +64,7 @@ if gan_type == 'celeb':
     dataroot = r"C:\Users\liamh\Documents\datasets\celeba"
 elif gan_type == 'dog':
     PATH_TO_DATA = './models/dog_dcgan/dog_data.pkl'
-    PATH_TO_DATA_BACKUP = './models/dog_dcgan/dog_data'
+    PATH_TO_DATA_BACKUP = './models/dog_dcgan/backups/dog_data'
     PATH_TO_LOAD_MODEL_D = './models/dog_dcgan/dog_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/dog_dcgan/dog_G_Model'
     PATH_TO_SAVE_BACKUP_MODEL_D = './models/dog_dcgan/backups/dog_D_Model'
@@ -70,9 +73,20 @@ elif gan_type == 'dog':
     PATH_TO_SAVE_MODEL_G = './models/dog_dcgan/dog_G_Model'
     PATH_TO_IMAGE_LOGS = './dog_gans_images'
     dataroot = r"C:\Users\liamh\Documents\datasets\cats-and-dogs\dogs"
+elif gan_type == 'cat':
+    PATH_TO_DATA = './models/cat_dcgan/cat_data.pkl'
+    PATH_TO_DATA_BACKUP = './models/cat_dcgan/backups/cat_data'
+    PATH_TO_LOAD_MODEL_D = './models/cat_dcgan/cat_D_Model'
+    PATH_TO_LOAD_MODEL_G = './models/cat_dcgan/cat_G_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_D = './models/cat_dcgan/backups/cat_D_Model'
+    PATH_TO_SAVE_BACKUP_MODEL_G = './models/cat_dcgan/backups/cat_G_Model'
+    PATH_TO_SAVE_MODEL_D = './models/cat_dcgan/cat_D_Model'
+    PATH_TO_SAVE_MODEL_G = './models/cat_dcgan/cat_G_Model'
+    PATH_TO_IMAGE_LOGS = './cat_gans_images'
+    dataroot = r"C:\Users\liamh\Documents\datasets\cats_annotated"
 elif gan_type == 'pokemon':
     PATH_TO_DATA = './models/pokemon_dcgan/pokemon_data.pkl'
-    PATH_TO_DATA_BACKUP = './models/pokemon_dcgan/pokemon_data'
+    PATH_TO_DATA_BACKUP = './models/pokemon_dcgan/backups/pokemon_data'
     PATH_TO_LOAD_MODEL_D = './models/pokemon_dcgan/pokemon_D_Model'
     PATH_TO_LOAD_MODEL_G = './models/pokemon_dcgan/pokemon_G_Model'
     PATH_TO_SAVE_BACKUP_MODEL_D = './models/pokemon_dcgan/backups/pokemon_D_Model'
@@ -105,7 +119,12 @@ ngf = 64
 ndf = 64
 
 # Learning rate for optimizers
-lr = 0.0002
+lr_g = 0.0002
+if gan_type == 'cat':
+    # 1/4 of DCGAN paper original value, recommended by AlexiaJM
+    lr_d = 0.00005
+else:
+    lr_d = 0.0002
 
 # Beta1 heperparam for Adam optimizers
 beta1 = 0.5
@@ -149,42 +168,10 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-    # Generator Code
-    class Generator(nn.Module):
-        def __init__(self, ngpu):
-            super(Generator, self).__init__()
-            self.ngpu = ngpu
-            self.main = nn.Sequential(
-                # input is Z, going into a convolution
-                #ConvTranspose2d(input, output, kernal, stride, padding, bias)
-                nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
-                nn.BatchNorm2d(ngf * 8),
-                nn.ReLU(True),
-                # state size. (ngf*8) x 4 x 4
-                nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf * 4),
-                nn.ReLU(True),
-                # state size. (ngf*4) x 8 x 8
-                nn.ConvTranspose2d(ngf * 4, ngf *2, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf * 2),
-                nn.ReLU(True),
-                # state size (ngf*2) x 16 x 16
-                nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ngf),
-                nn.ReLU(True),
-                # state size. (ngf) x 32 x 32
-                nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
-                nn.Tanh()
-                # state size. (nc) x 64 x 64
-            )
-
-        def forward(self, input):
-            return self.main(input)
-
     print("\nGAN for", gan_type)
 
     # Create the generator
-    netG = Generator(ngpu).to(device)
+    netG = Generator(ngpu, nz, ngf, nc).to(device)
 
     # Handle multi-gpu if desired
     if (device.type == 'cuda') and (ngpu > 1):
@@ -201,41 +188,13 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
     # Print the model
     print(netG)
 
-    # Dicriminator Code
-    class Discriminator(nn.Module):
-        def __init__(self, ngpu):
-            super(Discriminator, self).__init__()
-            self.ngpu = ngpu
-            self.main = nn.Sequential(
-                # input is (nc) x 64 x 64
-                nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf) x 32 x 32
-                nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 2),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*2) x 16 x 16
-                nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 4),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*4) x 8 x 8
-                nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-                nn.BatchNorm2d(ndf * 8),
-                nn.LeakyReLU(0.2, inplace=True),
-                # state size. (ndf*8) x 4 x 4
-                nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-                nn.Sigmoid()
-            )
-
-        def forward(self, input):
-            return self.main(input)
-
     # Create the Discriminator
-    netD = Discriminator(ngpu).to(device)
+    netD = Discriminator(ngpu, nz, ndf, nc).to(device)
 
     # Handle multi-gpu if desired
     if (device.type == 'cuda') and (ngpu > 1):
         netD = nn.DataParallel(netD, list(range(ngpu)))
+
 
     # Apply the weights_init function to randomly initialize all weights
     # to mean=0, stdev=0.2.
@@ -261,8 +220,8 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
     fake_label = 0
 
     # Setup Adam optimizers for both G and D
-    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
-    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
+    optimizerD = optim.Adam(netD.parameters(), lr=lr_d, betas=(beta1, 0.999))
+    optimizerG = optim.Adam(netG.parameters(), lr=lr_g, betas=(beta1, 0.999))
 
 
     # Training Loop
@@ -326,7 +285,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
                 # Calculate the gradients for this batch
                 errD_fake.backward()
                 D_G_z1 = output.mean().item()
-                
+
                 # Add the gradients from the all-real and all-fake batches
                 errD = errD_real + errD_fake
                 # Update D
@@ -371,11 +330,11 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             print("Epoch", epoch, "Time Elapsed:", str(math.floor(epoch_end_time - epoch_start_time)) + "s\n")
 
             # Save backups once every 10 epochs
-            if epoch % 10 == 0:
+            if epoch % 10 == 0 or gan_type == 'celeb':
                 # Backup model to disk
                 torch.save(netD.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_D + '_epoch_' + str(epoch) + '.pt')
                 torch.save(netG.state_dict(), PATH_TO_SAVE_BACKUP_MODEL_G + '_epoch_' + str(epoch) + '.pt')
-                print("Models for D and G saved to disk")
+                print("Backup: Models for D and G to disk")
 
                 # Backup data to disk
                 data = {}
@@ -384,10 +343,10 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
                 data['D_losses'] = D_losses
                 data['iters'] = iters
                 data['epoch'] = epoch + 1
-                pickle_jar = open(PATH_TO_DATA, 'wb')
+                pickle_jar = open(PATH_TO_DATA_BACKUP + '_epoch_' + str(epoch) + '.pkl', 'wb')
                 pickle.dump(data, pickle_jar)
                 pickle_jar.close()
-                print('Data saved to disk')
+                print('Backup: Data saved to disk\n')
 
             epoch += 1
 
@@ -403,7 +362,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         data['D_losses'] = D_losses
         data['iters'] = iters
         data['epoch'] = epoch
-        pickle_jar = open(PATH_TO_DATA_BACKUP + '.pkl', 'wb')
+        pickle_jar = open(PATH_TO_DATA + '.pkl', 'wb')
         pickle.dump(data, pickle_jar)
         pickle_jar.close()
         print('Data saved to disk')

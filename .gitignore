@@ -1,4 +1,7 @@
-models/
-celeb_gans_images/
-dog_gans_images
-pokemon_gans_images/
+DCGANs/models/
+DCGANs/celeb_gans_images/
+DCGANs/dog_gans_images
+DCGANs/pokemon_gans_images/
+DCGANs/cat_gans_images/
+CycleGANs/
+*.pyc
