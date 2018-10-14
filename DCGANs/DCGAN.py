@@ -36,18 +36,18 @@ animate_progress = False
 # Determines if models are loaded from disk
 load_models_from_disk = True
 
-# Determines if data (img_list, G_losses, D_losses, and iters) are loaded from disk
+# Determines if data (img_list, G_losses, D_losses, and iters) is loaded from disk
 load_data_from_disk = True
 
 # Determines if model will train, if false, model will be set for evaluation
 train_model = True
 
 # Detemines what type of GAN model will be trained
-gan_type = 'cat'
+gan_type = 'dog'
 
 # Number of training epochs
 # Specifies how many additional epochs to run
-num_epochs = 40
+num_epochs = 70
 
 # Location of data on disk, disk location of models
 # and root directory for dataset
@@ -120,7 +120,7 @@ ndf = 64
 
 # Learning rate for optimizers
 lr_g = 0.0002
-if gan_type == 'cat':
+if gan_type == 'cat' or gan_type == 'dog':
     # 1/4 of DCGAN paper original value, recommended by AlexiaJM
     lr_d = 0.00005
 else:
@@ -239,6 +239,8 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             # num_epochs specifies how many additional epochs to run
             num_epochs += epoch
         print('\nData loaded from disk')
+        print('epoch:', data['epoch'])
+        print('num_epochs:', num_epochs)
     else:
         img_list = []
         G_losses = []
@@ -328,6 +330,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
             # Benchmarking stats
             epoch_end_time = time.time()
             print("Epoch", epoch, "Time Elapsed:", str(math.floor(epoch_end_time - epoch_start_time)) + "s\n")
+            print("Estimated time remaining:", str(math.floor((num_epochs - epoch) * (epoch_end_time - epoch_start_time) / 60)) + "m\n" )
 
             # Save backups once every 10 epochs
             if epoch % 10 == 0 or gan_type == 'celeb':
@@ -362,7 +365,7 @@ if __name__ == '__main__':      # Windows PyTorch multiprocessing support
         data['D_losses'] = D_losses
         data['iters'] = iters
         data['epoch'] = epoch
-        pickle_jar = open(PATH_TO_DATA + '.pkl', 'wb')
+        pickle_jar = open(PATH_TO_DATA, 'wb')
         pickle.dump(data, pickle_jar)
         pickle_jar.close()
         print('Data saved to disk')
