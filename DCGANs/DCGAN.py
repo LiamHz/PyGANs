@@ -120,7 +120,7 @@ ndf = 64
 
 # Learning rate for optimizers
 lr_g = 0.0002
-if gan_type == 'cat' or gan_type == 'dog':
+if gan_type == 'cat':
     # 1/4 of DCGAN paper original value, recommended by AlexiaJM
     lr_d = 0.00005
 else:
