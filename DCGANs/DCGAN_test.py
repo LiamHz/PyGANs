@@ -115,4 +115,8 @@ ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in display_ima
 ani = animation.ArtistAnimation(fig, ims, interval=2000, repeat_delay=2000, blit=False)
 
 HTML(ani.to_jshtml())
-plt.show()
+
+try:
+    plt.show()
+except KeyboardInterrupt:
+    plt.close()
